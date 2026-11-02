@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masa Depan Doni: Pilih Jalurmu!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0b0b0b;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 900px;
+            max-height: 600px;
+            border: 3px solid #444;
+            background-color: #111;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+        @media (min-width: 900px) {
+            #game-container {
+                border-radius: 8px;
+                border: 4px solid #fff;
+            }
+        }
+        .screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            text-shadow: 2px 2px #ff0000;
+        }
+        .btn {
+            background: #222;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* Area Panggung Karakter: Mentok Kiri dan Kanan */
+        #character-stage {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            padding: 10px 0;
+            position: relative;
+        }
+        .character-sprite {
+            width: 130px;
+            height: 180px;
+            border: 2px dashed #555;
+            background: #151515;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+            padding: 10px;
+            transition: 0.3s;
+            opacity: 0.3;
+        }
+        .character-sprite.active {
+            opacity: 1;
+            border-color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        }
+
+        /* Kotak Dialog di Bagian Bawah */
+        #dialogue-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        #dialogue-box {
+            min-height: 140px;
+            border: 3px solid #fff;
+            padding: 15px;
+            background: #1c1c1c;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            position: relative;
+        }
+        #speaker-name {
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 6px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        #dialogue-text {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+        #choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .choice-btn {
+            background: #111;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .choice-btn:hover {
+            background: #ffcc00;
+            color: #000;
+        }
+        
+        .shake-char {
+            display: inline-block;
+            animation: textShake 0.2s infinite alternate;
+        }
+        @keyframes textShake {
+            0% { transform: translateY(1px); }
+            100% { transform: translateY(-2px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container" onclick="handleScreenClick()">
+        
+        <!-- 1. LOADING / MAIN MENU SCREEN -->
+        <div id="menu-screen" class="screen" onclick="event.stopPropagation()">
+            <h1>MASA DEPAN DONI</h1>
+            <p style="margin-bottom: 30px; color: #aaa;">Sebuah Game Pilihan Hidup Lulusan SMK</p>
+            <button class="btn" onclick="startGame()">MASUK</button>
+            <button class="btn" onclick="alert('Pengaturan Sound: Volume 100% (Default)')">PENGATURAN</button>
+        </div>
+
+        <!-- 2. GAMEPLAY SCREEN -->
+        <div id="gameplay-screen" class="screen hidden" style="justify-content: space-between; height: 100%;">
+            <div id="character-stage">
+                <div class="character-sprite" id="sprite-doni">[Doni]</div>
+                <div class="character-sprite" id="sprite-ibu">[Ibu / Guru BK]</div>
+            </div>
+
+            <div id="dialogue-container">
+                <div id="dialogue-box">
+                    <div id="speaker-name">NARATOR</div>
+                    <div id="dialogue-text"></div>
+                    <div id="choices-container" class="hidden" onclick="event.stopPropagation()"></div>
+                </div>
+                <div style="font-size: 0.75rem; color: #666; text-align: right; margin-top: 3px;">[Klik layar untuk lanjut]</div>
+            </div>
+        </div>
+
+        <!-- 3. GAME OVER / BAD ENDING SCREEN -->
+        <div id="gameover-screen" class="screen hidden" onclick="event.stopPropagation()">
+            <h1 style="color: #ff3333;">ANDA KALAH / BAD ENDING</h1>
+            <p id="gameover-reason" style="margin: 20px; font-size: 1.05rem; line-height: 1.6; max-width: 700px; text-align: left; background: #1a1a1a; padding: 20px; border: 2px solid #ff3333;"></p>
+            <button class="btn" onclick="retryGame()">Coba Lagi</button>
+        </div>
+
+        <!-- 4. GOOD ENDING & CREDIT SCREEN -->
+        <div id="ending-screen" class="screen hidden" onclick="event.stopPropagation()" style="overflow-y: auto; justify-content: center; padding: 20px;">
+            <h1 style="color: #00ff66;">TAMAT - GOOD ENDING</h1>
+            <p style="line-height: 1.6; font-size: 1.05rem; margin-bottom: 20px; max-width: 700px; text-align: left;">
+                Berkat kerja keras, riset mandiri, dan dukungan ibunya, Doni berhasil melewati masa kebingungannya. Ia mendaftar ke kampus impian yang sesuai dengan keahlian kodingnya dan biaya yang ramah keluarga!
+            </p>
+            <button class="btn" onclick="showReview()">Review / Kredit Kelompok</button>
+        </div>
+
+        <!-- 5. REVIEW / KREDIT KELOMPOK SCREEN -->
+        <div id="review-screen" class="screen hidden" onclick="event.stopPropagation()" style="overflow-y: auto; justify-content: center; padding: 20px;">
+            <h2>🌟 KREDIT TIM PENGEMBANG 🌟</h2>
+            <div style="text-align: left; background: #222; padding: 15px; border: 1px solid #fff; width: 100%; max-width: 700px; margin: 15px 0; font-size: 0.95rem;">
+                <p><strong>Nama Proyek:</strong> Masa Depan Doni</p>
+                <p><strong>[Nama Ketua Kamu]</strong> — Ketua Kelompok / Game Programmer</p>
+                <p><strong>[Nama Anggota 1 (Anonim)]</strong> — Scriptwriter & Storyteller</p>
+                <p><strong>[Nama Anggota 2 (Anonim)]</strong> — UI/UX & Asset Designer</p>
+            </div>
+            <p style="color: #ffcc00; margin-bottom: 15px;">"Terima kasih sudah memainkannya!"</p>
+            <button class="btn" onclick="backToMenu()">Kembali ke Menu Utama</button>
+        </div>
+
+    </div>
+
+    <script>
+        const storyData = {
+            1: { speaker: "NARATOR", type: "narrator", text: "Ini adalah Doni. Doni adalah anak lulusan SMK Al-Midini dengan semangat yang tinggi serta percaya diri.", next: 2 },
+            2: { speaker: "NARATOR", type: "narrator", text: "Hari ini adalah hari kelulusannya. Ia mengambil rapot di sekolahnya, menandakan masa SMK-nya telah resmi usai.", next: 3 },
+            3: { speaker: "DONI", avatar: "doni", text: "Wah, akhirnya lulus juga dari Sekolah Al-Midini! Walaupun fasilitasnya sederhana, setidaknya ilmu yang kudapat lumayan.", next: 4 },
+            4: { speaker: "DONI", avatar: "doni", text: "Rapot sudah kupegang. Rasanya perjalananku baru saja dimulai. Tapi sebelum itu, aku pulang dulu ah, Ibu pasti sudah menungguku.", next: 5 },
+            5: { speaker: "DONI", avatar: "doni", text: "Assalamu'alaikum, Bu. Aku sudah pulang. Tidak terasa ya, Bu, aku sudah lulus.", next: 6 },
+            6: {
+                speaker: "IBU DONI", avatar: "ibu",
+                text: "Wa'alaikumussalam, Doni. Sekarang kamu sudah dewasa. Kamu harus menentukan alur hidupmu ke depan. Apa yang akan kamu lakukan?",
+                choices: [
+                    { text: "A. Aku ingin lanjut kuliah, Bu. Aku selalu memimpikannya.", next: 7 },
+                    { text: "B. Aku ingin menjadi admin judol, Bu. Gajinya besar dan temanku mengajakku ke Kamboja.", next: "bad1_dialog" }
+                ]
+            },
+            7: { speaker: "IBU DONI", avatar: "ibu", text: "Wah, itu ide yang sangat bagus, tapi Doni...", next: 8 },
+            8: { speaker: "DONI", avatar: "doni", text: "Tapi kenapa, Bu?", next: 9 },
+            9: { speaker: "IBU DONI", avatar: "ibu", text: "Kita ini keluarga sederhana, keluarga kita tidak ada yang pernah kuliah. Apakah kamu tahu apa yang harus kamu lakukan?", next: 10 },
+            10: { speaker: "DONI", avatar: "doni", text: "Hmm.. iya juga ya, Bu. Apa yang harus aku lakukan kira-kira?", next: 11 },
+            11: {
+                speaker: "NARATOR", type: "narrator",
+                text: "Doni sadar, semangat saja tidak cukup. Ia buta arah jurusan dan buta biaya. Apa yang harus Doni lakukan malam ini di kamarnya?",
+                choices: [
+                    { text: "A. Membuka laptop, riset kisaran biaya (UKT) & daftar jurusan IT/Vokasi via internet.", next: 12 },
+                    { text: "B. Tidur saja dan pasrah, nanti juga ada kampus yang mau menerima secara gratis.", next: "bad2_dialog" }
+                ]
+            },
+            12: { speaker: "NARATOR", type: "narrator", text: "Keesokan paginya, matahari bersinar cerah. Doni memulai langkah awal pertamanya...", next: 13 },
+            13: {
+                speaker: "DONI", avatar: "doni",
+                text: "Oke! Mulai hari ini, aku harus ambil langkah nyata. Aku mau...",
+                choices: [
+                    { text: "A. Konsultasi ke guru BK SMK dan mencatat 3 pilihan kampus impian sesuai budget.", next: "good_dialog" },
+                    { text: "B. Meminta rekomendasi jurusan acak dari teman tongkrongan yang tidak jelas.", next: "bad3_dialog" }
+                ]
+            }
+        };
+
+        let currentSceneId = 1;
+        let charIndex = 0;
+        let typingInterval = null;
+        let isTyping = false;
+        let currentFullText = "";
+        let waitingForChoice = false;
+        
+        let activeMode = null; 
+        let dialogStep = 0;
+
+        const cutsceneDialogues = {
+            bad1: [
+                { speaker: "DONI", avatar: "doni", text: "Aku ingin menjadi admin judol, Bu! Gajinya besar dan temanku sudah mengajakku ke Kamboja." },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Astagfirullah, Doni! Kamu yang benar saja! Gak boleh, Nak, durhaka kamu!" },
+                { speaker: "DONI", avatar: "doni", text: "Aku tidak peduli, Ibu! Aku akan berangkat sekarang karena aku pandai meng-coding, jadi aku pasti bisa kaya dari itu. Dadah!" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "DONII!!" }
+            ],
+            bad2: [
+                { speaker: "DONI", avatar: "doni", text: "Ah, tidur saja lah. Biar semesta yang mengatur jalanku besok!" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Doni, bangun! Ini tagihan uang pendaftaran kampus swasta pilihan acakmu datang, harganya mahal sekali!" },
+                { speaker: "DONI", avatar: "doni", text: "Hah?! Darimana uangnya, Bu? Aku tidak sanggup bayar semesterannya..." },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Ya Allah, Nak... Kita mau makan apa kalau uangnya habis buat ini?" }
+            ],
+            bad3: [
+                { speaker: "TEMAN", avatar: "ibu", text: "Udah Don, masuk jurusan teater boneka mistis aja bareng gua, seru!" },
+                { speaker: "DONI", avatar: "doni", text: "Hmm, oke deh ikut lu aja bro, yang penting kuliah." },
+                { speaker: "NARATOR", avatar: "doni", text: "Beberapa bulan kemudian..." },
+                { speaker: "DONI", avatar: "doni", text: "Duh... gua salah jurusan banget, gak ngerti materinya, kodingan gua malah terbengkalai. Stres banget!" }
+            ],
+            good: [
+                { speaker: "DONI", avatar: "doni", text: "Bu, alhamdulillah! Berkat riset kemarin dan saran guru BK, aku lolos seleksi Vokasi di kampus impian dengan beasiswa!" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Alhamdulillah ya Allah... Ibu bangga sama kamu, Doni. Kerja kerasmu terbayar juga." },
+                { speaker: "DONI", avatar: "doni", text: "Iya, Bu! Ini semua berkat doa dan bimbingan Ibu. Perjuanganku kuliah baru saja dimulai!" }
+            ]
+        };
+
+        function startGame() {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+            loadScene(1);
+        }
+
+        function loadScene(id) {
+            currentSceneId = id;
+            activeMode = null;
+            let scene = storyData[id];
+            
+            let choicesContainer = document.getElementById('choices-container');
+            choicesContainer.classList.add('hidden');
+            choicesContainer.innerHTML = '';
+            waitingForChoice = false;
+
+            updateCharacterSprites(scene.avatar);
+            document.getElementById('speaker-name').innerText = scene.speaker;
+
+            typeText(scene.text, function() {
+                if (scene.choices) {
+                    waitingForChoice = true;
+                    showChoices(scene.choices);
+                }
+            });
+        }
+
+        function updateCharacterSprites(avatar) {
+            let spriteDoni = document.getElementById('sprite-doni');
+            let spriteIbu = document.getElementById('sprite-ibu');
+            spriteDoni.classList.remove('active');
+            spriteIbu.classList.remove('active');
+
+            if (avatar === "doni") spriteDoni.classList.add('active');
+            if (avatar === "ibu") spriteIbu.classList.add('active');
+        }
+
+        function typeText(text, callback) {
+            let targetElement = document.getElementById('dialogue-text');
+            targetElement.innerHTML = '';
+            charIndex = 0;
+            isTyping = true;
+            currentFullText = text;
+            
+            clearInterval(typingInterval);
+            typingInterval = setInterval(function() {
+                if (charIndex < text.length) {
+                    let char = text.charAt(charIndex);
+                    let span = document.createElement('span');
+                    span.innerText = char;
+                    if (char === '!' || char === '?') {
+                        span.classList.add('shake-char');
+                    }
+                    targetElement.appendChild(span);
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    isTyping = false;
+                    if (callback) callback();
+                }
+            }, 25);
+        }
+
+        function handleScreenClick() {
+            if (!document.getElementById('gameplay-screen').classList.contains('hidden')) {
+                
+                if (isTyping) {
+                    clearInterval(typingInterval);
+                    document.getElementById('dialogue-text').innerHTML = currentFullText;
+                    isTyping = false;
+                    
+                    let scene = storyData[currentSceneId];
+                    if (scene && scene.choices && !activeMode) {
+                        waitingForChoice = true;
+                        showChoices(scene.choices);
+                    }
+                    return;
+                }
+
+                if (activeMode) {
+                    dialogStep++;
+                    let dialogList = cutsceneDialogues[activeMode];
+                    if (dialogStep < dialogList.length) {
+                        runCutsceneStep();
+                    } else {
+                        finalizeActiveMode(activeMode);
+                    }
+                    return;
+                }
+
+                if (waitingForChoice) return;
+
+                let scene = storyData[currentSceneId];
+                if (scene && !scene.choices && scene.next) {
+                    if (typeof scene.next === 'number') {
+                        loadScene(scene.next);
+                    }
+                }
+            }
+        }
+
+        function showChoices(choices) {
+            let container = document.getElementById('choices-container');
+            container.classList.remove('hidden');
+            
+            choices.forEach(choice => {
+                let btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = choice.text;
+                btn.onclick = function(e) {
+                    e.stopPropagation();
+                    container.innerHTML = '';
+                    container.classList.add('hidden');
+                    waitingForChoice = false;
+                    handleChoiceResult(choice.next);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function handleChoiceResult(nextTarget) {
+            if (typeof nextTarget === 'string' && nextTarget.includes('_dialog')) {
+                activeMode = nextTarget.replace('_dialog', '');
+                dialogStep = 0;
+                runCutsceneStep();
+            } else if (typeof nextTarget === 'number') {
+                loadScene(nextTarget);
+            }
+        }
+
+        function runCutsceneStep() {
+            let dialogList = cutsceneDialogues[activeMode];
+            let d = dialogList[dialogStep];
+            document.getElementById('speaker-name').innerText = d.speaker;
+            updateCharacterSprites(d.avatar);
+            typeText(d.text, function() {
+                isTyping = false;
+            });
+        }
+
+        function finalizeActiveMode(mode) {
+            activeMode = null;
+            dialogStep = 0;
+            if (mode === 'good') {
+                triggerGoodEnding();
+            } else {
+                let reason = "";
+                if (mode === 'bad1') {
+                    reason = "Doni pergi bersama temannya ke Kamboja. Bukannya menjadi admin judol, ia malah dijual oleh temannya ke sindikat penjualan organ ilegal!";
+                } else if (mode === 'bad2') {
+                    reason = "Karena pasrah dan tidak merencanakan apa-apa, Doni salah masuk ke perguruan tinggi swasta abal-abalan yang mahal, terlilit hutang, dan akhirnya putus kuliah di tengah jalan.";
+                } else if (mode === 'bad3') {
+                    reason = "Doni asal ikut pilihan temannya tanpa riset. Ia salah jurusan, merasa salah kamar, kehilangan semangat, dan akhirnya gagal menyelesaikan kuliahnya.";
+                }
+                triggerGameOver(reason);
+            }
+        }
+
+        function triggerGameOver(reason) {
+            document.getElementById('gameplay-screen').classList.add('hidden');
+            document.getElementById('gameover-screen').classList.remove('hidden');
+            document.getElementById('gameover-reason').innerText = reason;
+        }
+
+        function retryGame() {
+            document.getElementById('gameover-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+            loadScene(6); 
+        }
+
+        function triggerGoodEnding() {
+            document.getElementById('gameplay-screen').classList.add('hidden');
+            document.getElementById('ending-screen').classList.remove('hidden');
+        }
+
+        function showReview() {
+            document.getElementById('ending-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+        }
+
+        function backToMenu() {
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            currentSceneId = 1;
+            activeMode = null;
+            dialogStep = 0;
+        }
+    </script>
+</body>
+</html>
